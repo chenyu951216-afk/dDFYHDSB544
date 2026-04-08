@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, List, Optional
 
+from background_runner import get_runner_snapshot
 from learning_store import LEARNING_STATE, JOURNAL_PATH, get_ai_strategy_profile, get_strategy_rollup
 from okx_force_order import create_okx_exchange, env_or_blank, fetch_total_equity_usdt
 from strategy_portfolio import get_per_strategy_allocated_equity, get_strategy_slot_count
@@ -190,6 +191,7 @@ def _strategy_cards() -> List[Dict[str, Any]]:
     enabled = list_enabled_strategies()
     active_positions = list_active_positions()
     pending_entries = list_pending_entries()
+    runner = get_runner_snapshot()
     cards: List[Dict[str, Any]] = []
 
     for spec in enabled:
@@ -245,6 +247,15 @@ def _strategy_cards() -> List[Dict[str, Any]]:
                 "last_management_at": _fmt_ts_ms((active or pending).get("last_management_at_ms")),
                 "opened_at": _fmt_ts_ms(active.get("opened_at_ms")),
                 "pending_created_at": _fmt_ts_ms(pending.get("pending_created_at_ms")),
+                "scan_state_text": (
+                    "\u6301\u5009\u76e3\u63a7\u4e2d"
+                    if active
+                    else "\u7b49\u5f85\u89f8\u767c\u76e3\u63a7\u4e2d"
+                    if pending
+                    else "\u6383\u5e63\u4e2d"
+                    if bool(runner.get("enabled"))
+                    else "\u672a\u555f\u7528\u81ea\u52d5\u8f2a\u5de1"
+                ),
             }
         )
     return cards
@@ -297,6 +308,7 @@ def dashboard_snapshot() -> Dict[str, Any]:
         "strategies": cards,
         "recent_trades": recent_trades,
         "ai_panel": ai_panel,
+        "runner": get_runner_snapshot(),
     }
     LOGGER.info(
         "\u5100\u8868\u677f\u5feb\u7167\u5df2\u6574\u7406\uff5c\u7b56\u7565\u6578=%s\uff5c\u6301\u5009=%s\uff5c\u7b49\u5f85=%s\uff5c\u7e3d\u5df2\u5be6\u73fe\u640d\u76ca=%.4f",
