@@ -1,0 +1,4 @@
+ccxt>=4.4.0
+openai>=1.0.0
+Flask>=3.0.0
+waitress>=3.0.0
