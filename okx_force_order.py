@@ -61,6 +61,18 @@ def clamp(value: float, low: float, high: float) -> float:
     return max(float(low), min(float(high), float(value)))
 
 
+def normalize_client_order_id(client_order_id: Optional[str]) -> str:
+    raw = str(client_order_id or "").strip().lower()
+    if not raw:
+        raw = f"cx{int(time.time() * 1000)}"
+    cleaned = "".join(ch for ch in raw if ch.isalnum())
+    if not cleaned:
+        cleaned = f"cx{int(time.time() * 1000)}"
+    if not cleaned.startswith("cx"):
+        cleaned = f"cx{cleaned}"
+    return cleaned[:32]
+
+
 def fetch_total_equity_usdt(exchange: ccxt.okx) -> float:
     balance = exchange.fetch_balance()
 
@@ -805,7 +817,7 @@ def force_market_order(
         "lever": str(int(leverage)),
     }
     if client_order_id:
-        params["clOrdId"] = str(client_order_id)
+        params["clOrdId"] = normalize_client_order_id(client_order_id)
 
     set_symbol_leverage(
         exchange=exchange,
@@ -814,7 +826,18 @@ def force_market_order(
         td_mode=td_mode,
         side=side,
     )
-    return exchange.create_order(symbol, "market", open_side, float(qty), None, params)
+
+    try:
+        return exchange.create_order(symbol, "market", open_side, float(qty), None, params)
+    except Exception as exc:
+        error_text = str(exc).lower()
+        if "clordid" not in error_text and "51000" not in error_text:
+            raise
+
+        fallback_params = dict(params)
+        fallback_params.pop("clOrdId", None)
+        fallback_params.pop("clordid", None)
+        return exchange.create_order(symbol, "market", open_side, float(qty), None, fallback_params)
 
 
 def force_open_with_tp_sl(
