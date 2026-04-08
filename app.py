@@ -2,6 +2,7 @@ import os
 
 from flask import Flask, jsonify, render_template, request
 
+from background_runner import get_runner_snapshot, start_background_runner
 from dashboard_service import dashboard_logs, dashboard_snapshot, startup_message
 from learning_db import (
     fetch_ai_profile,
@@ -17,6 +18,7 @@ from learning_db import (
 app = Flask(__name__, template_folder="templates", static_folder="static")
 init_learning_db()
 startup_message()
+start_background_runner()
 
 
 @app.route("/")
@@ -32,6 +34,16 @@ def api_dashboard():
 @app.route("/api/logs")
 def api_logs():
     return jsonify(dashboard_logs(limit=180))
+
+
+@app.route("/api/runner")
+def api_runner():
+    return jsonify(
+        {
+            "message": "自動輪巡與掃幣狀態",
+            "payload": get_runner_snapshot(),
+        }
+    )
 
 
 @app.route("/api/learning/overview")
