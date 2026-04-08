@@ -21,6 +21,11 @@ startup_message()
 start_background_runner()
 
 
+@app.before_request
+def ensure_background_runner():
+    start_background_runner()
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -40,7 +45,7 @@ def api_logs():
 def api_runner():
     return jsonify(
         {
-            "message": "自動輪巡與掃幣狀態",
+            "message": "\u81ea\u52d5\u8f2a\u5de1\u8207\u6383\u5e63\u72c0\u614b",
             "payload": get_runner_snapshot(),
         }
     )
@@ -50,7 +55,7 @@ def api_runner():
 def api_learning_overview():
     return jsonify(
         {
-            "message": "AI 學習資料庫總覽",
+            "message": "AI \u5b78\u7fd2\u8cc7\u6599\u5eab\u6458\u8981",
             "database": "SQLite",
             "payload": fetch_learning_overview(),
         }
@@ -63,7 +68,7 @@ def api_learning_trades():
     limit = int(request.args.get("limit", "100") or "100")
     return jsonify(
         {
-            "message": "AI 學習成交資料",
+            "message": "AI \u5b78\u7fd2\u6210\u4ea4\u8cc7\u6599",
             "database": "SQLite",
             "payload": fetch_closed_trades(strategy_id=strategy_id, limit=limit),
         }
@@ -74,7 +79,7 @@ def api_learning_trades():
 def api_learning_rollups():
     return jsonify(
         {
-            "message": "AI 學習策略彙總",
+            "message": "AI \u5b78\u7fd2\u7b56\u7565\u5f59\u7e3d",
             "database": "SQLite",
             "payload": fetch_strategy_rollups(),
         }
@@ -86,7 +91,7 @@ def api_learning_symbol_stats():
     strategy_id = str(request.args.get("strategy_id", "") or "").strip() or None
     return jsonify(
         {
-            "message": "AI 學習商品統計",
+            "message": "AI \u5b78\u7fd2\u5546\u54c1\u7d71\u8a08",
             "database": "SQLite",
             "payload": fetch_symbol_stats(strategy_id=strategy_id),
         }
@@ -98,7 +103,7 @@ def api_learning_reviews():
     limit = int(request.args.get("limit", "12") or "12")
     return jsonify(
         {
-            "message": "AI 每週學習回報",
+            "message": "AI \u6bcf\u9031\u5b78\u7fd2\u56de\u5831",
             "database": "SQLite",
             "payload": fetch_weekly_reviews(limit=limit),
         }
@@ -109,7 +114,7 @@ def api_learning_reviews():
 def api_learning_ai_profile():
     return jsonify(
         {
-            "message": "AI 策略格設定",
+            "message": "AI \u7b56\u7565\u683c\u8a2d\u5b9a",
             "database": "SQLite",
             "payload": fetch_ai_profile(),
         }
