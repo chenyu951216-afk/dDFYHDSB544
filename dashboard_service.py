@@ -192,6 +192,10 @@ def _strategy_cards() -> List[Dict[str, Any]]:
     active_positions = list_active_positions()
     pending_entries = list_pending_entries()
     runner = get_runner_snapshot()
+    scan_map = {
+        str(item.get("strategy_id") or ""): dict(item)
+        for item in list(runner.get("last_results") or [])
+    }
     cards: List[Dict[str, Any]] = []
 
     for spec in enabled:
@@ -199,6 +203,7 @@ def _strategy_cards() -> List[Dict[str, Any]]:
         active = dict(active_positions.get(strategy_id) or {})
         pending = dict(pending_entries.get(strategy_id) or {})
         rollup = get_strategy_rollup(strategy_id)
+        scan_info = scan_map.get(strategy_id, {})
         current_price = 0.0
         unrealized = 0.0
         movement = {"stop_moved": False, "take_moved": False}
@@ -252,10 +257,16 @@ def _strategy_cards() -> List[Dict[str, Any]]:
                     if active
                     else "\u7b49\u5f85\u89f8\u767c\u76e3\u63a7\u4e2d"
                     if pending
+                    else f"\u5df2\u6383\u5230 {int(scan_info.get('candidate_count') or 0)} \u500b\u5019\u9078"
+                    if bool(runner.get("enabled")) and int(scan_info.get("candidate_count") or 0) > 0
                     else "\u6383\u5e63\u4e2d"
+                    if bool(runner.get("enabled")) and not runner.get("last_results")
+                    else "\u5c1a\u672a\u6383\u5230\u5019\u9078"
                     if bool(runner.get("enabled"))
                     else "\u672a\u555f\u7528\u81ea\u52d5\u8f2a\u5de1"
                 ),
+                "scan_best_symbol": str(scan_info.get("symbol") or ""),
+                "scan_candidate_count": int(scan_info.get("candidate_count") or 0),
             }
         )
     return cards
