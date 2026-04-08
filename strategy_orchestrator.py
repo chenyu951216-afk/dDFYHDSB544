@@ -53,6 +53,25 @@ class OrchestratorConfig:
     ai_generated: AIGeneratedMetaStrategyConfig = field(default_factory=AIGeneratedMetaStrategyConfig)
 
 
+def _run_strategy(strategy_id: str, runner, exchange, config_obj) -> Dict[str, Any]:
+    try:
+        return {
+            "strategy_id": strategy_id,
+            "result": runner(exchange=exchange, config=config_obj),
+        }
+    except Exception as exc:
+        return {
+            "strategy_id": strategy_id,
+            "result": {
+                "phase": "error",
+                "result": {
+                    "status": "runner_exception",
+                    "error": str(exc),
+                },
+            },
+        }
+
+
 def run_all_strategies(
     exchange=None,
     config: Optional[OrchestratorConfig] = None,
@@ -64,78 +83,39 @@ def run_all_strategies(
     results: List[Dict[str, Any]] = []
 
     if bool(config.trend_hma_std_enabled):
-        results.append(
-            {
-                "strategy_id": "trend_hma_std_4h_v1",
-                "result": run_trend_cycle(exchange=exchange, config=config.trend_hma_std),
-            }
-        )
+        results.append(_run_strategy("trend_hma_std_4h_v1", run_trend_cycle, exchange, config.trend_hma_std))
 
     if bool(config.larry_breakout_enabled):
-        results.append(
-            {
-                "strategy_id": "larry_breakout_cmo_2h_4h_v1",
-                "result": run_larry_cycle(exchange=exchange, config=config.larry_breakout),
-            }
-        )
+        results.append(_run_strategy("larry_breakout_cmo_2h_4h_v1", run_larry_cycle, exchange, config.larry_breakout))
 
     if bool(config.bollinger_width_enabled):
-        results.append(
-            {
-                "strategy_id": "bollinger_width_4h_v1",
-                "result": run_bbw_cycle(exchange=exchange, config=config.bollinger_width),
-            }
-        )
+        results.append(_run_strategy("bollinger_width_4h_v1", run_bbw_cycle, exchange, config.bollinger_width))
 
     if bool(config.ma_breakout_enabled):
-        results.append(
-            {
-                "strategy_id": "ma_breakout_4h_v1",
-                "result": run_ma_breakout_cycle(exchange=exchange, config=config.ma_breakout),
-            }
-        )
+        results.append(_run_strategy("ma_breakout_4h_v1", run_ma_breakout_cycle, exchange, config.ma_breakout))
 
     if bool(config.burst_sma_channel_enabled):
-        results.append(
-            {
-                "strategy_id": "burst_sma_channel_1h_v1",
-                "result": run_burst_cycle(exchange=exchange, config=config.burst_sma_channel),
-            }
-        )
+        results.append(_run_strategy("burst_sma_channel_1h_v1", run_burst_cycle, exchange, config.burst_sma_channel))
 
     if bool(config.naked_k_reversal_enabled):
-        results.append(
-            {
-                "strategy_id": "naked_k_reversal_1h_v1",
-                "result": run_naked_k_cycle(exchange=exchange, config=config.naked_k_reversal),
-            }
-        )
+        results.append(_run_strategy("naked_k_reversal_1h_v1", run_naked_k_cycle, exchange, config.naked_k_reversal))
 
     if bool(config.mean_reversion_atr_enabled):
-        results.append(
-            {
-                "strategy_id": "mean_reversion_atr_2h_daily_v1",
-                "result": run_mean_rev_cycle(exchange=exchange, config=config.mean_reversion_atr),
-            }
-        )
+        results.append(_run_strategy("mean_reversion_atr_2h_daily_v1", run_mean_rev_cycle, exchange, config.mean_reversion_atr))
 
     if bool(config.dual_sma_pullback_enabled):
-        results.append(
-            {
-                "strategy_id": "dual_sma_pullback_2h_v1",
-                "result": run_dual_sma_cycle(exchange=exchange, config=config.dual_sma_pullback),
-            }
-        )
+        results.append(_run_strategy("dual_sma_pullback_2h_v1", run_dual_sma_cycle, exchange, config.dual_sma_pullback))
 
     if bool(config.ai_generated_enabled):
-        results.append(
-            {
-                "strategy_id": "ai_generated_meta_v1",
-                "result": run_ai_generated_cycle(exchange=exchange, config=config.ai_generated),
-            }
-        )
+        results.append(_run_strategy("ai_generated_meta_v1", run_ai_generated_cycle, exchange, config.ai_generated))
 
-    weekly_ai_sync = run_weekly_ai_learning_cycle()
+    try:
+        weekly_ai_sync = run_weekly_ai_learning_cycle()
+    except Exception as exc:
+        weekly_ai_sync = {
+            "status": "error",
+            "error": str(exc),
+        }
 
     return {
         "capital_state": capital_state,
